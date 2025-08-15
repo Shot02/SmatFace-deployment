@@ -203,8 +203,6 @@ multidict @ file:///C:/b/abs_44ido987fv/croot/multidict_1701097803486/work
 multipledispatch @ file:///C:/Users/dev-admin/perseverance-python-buildout/croot/multipledispatch_1699473951974/work
 mypy @ file:///C:/b/abs_b8k0j63oc7/croot/mypy-split_1725574346532/work
 mypy-extensions @ file:///C:/Users/dev-admin/perseverance-python-buildout/croot/mypy_extensions_1699482634516/work
-mysql==0.0.3
-mysqlclient==2.2.7
 namex @ file:///C:/b/abs_cdq28t3827/croot/namex_1715206998407/work
 navigator-updater @ file:///C:/b/abs_22_3uaq2ey/croot/navigator-updater_1718030405023/work
 nbclient @ file:///C:/Users/dev-admin/perseverance-python-buildout/croot/nbclient_1701796752236/work
