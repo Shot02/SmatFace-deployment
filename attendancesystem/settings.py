@@ -25,10 +25,11 @@ PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 SECRET_KEY = "django-insecure-v3*=uz-@a*lt-#p@!xcd*6j21@*l-zf+jm71f!!@5pqn+euy97"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'attendancesystem.settings')
 
 # Application definition
 
@@ -43,6 +44,7 @@ INSTALLED_APPS = [
     'crispy_forms',
     'django_extensions',
     'attendance',
+    'crispy_bootstrap5',
 ]
 
 MIDDLEWARE = [
@@ -137,6 +139,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 
+
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -157,6 +160,7 @@ LOGOUT_REDIRECT_URL = '/'
 FACE_RECOGNITION_TOLERANCE = 0.6
 FACE_DATA_DIR = os.path.join(BASE_DIR, 'face_data')
 CASCADES_DIR = os.path.join(BASE_DIR, 'cascades')
+
 
 REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
