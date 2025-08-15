@@ -6,7 +6,7 @@ dj-database-url
 djangorestframework
 crispy-bootstrap5
 django-extensions
-Pillow
+pillow==9.5.0
 face-recognition==1.3.0
 face_recognition_models==0.3.0
 facenet-pytorch==2.6.0
