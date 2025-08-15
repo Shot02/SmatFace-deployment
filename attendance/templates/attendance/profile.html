@@ -1,0 +1,98 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}My Profile - SmartFace{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8 px-4">
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <!-- Profile Header -->
+        <div class="bg-blue-600 p-6 text-white">
+            <div class="flex items-center">
+                <div class="mr-4">
+                    {% if user.profile.profile_picture %}
+                        <img src="{{ user.profile.profile_picture.url }}" 
+                             class="w-24 h-24 rounded-full object-cover border-4 border-white">
+                    {% else %}
+                        <div class="w-24 h-24 rounded-full bg-blue-400 flex items-center justify-center text-4xl">
+                            {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold">{{ user.get_full_name }}</h1>
+                    <p class="text-blue-100">{{ user.profile.position|default:"Staff" }} \u2022 {{ user.organization.name|default:"Organization" }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Profile Details -->
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h2 class="text-lg font-semibold mb-4 text-gray-700">Personal Information</h2>
+                <div class="space-y-3">
+                    <p><span class="font-medium">Email:</span> {{ user.email }}</p>
+                    <p><span class="font-medium">Phone:</span> {{ user.profile.phone_number|default:"Not provided" }}</p>
+                    <p><span class="font-medium">Department:</span> {{ user.department.name|default:"Not assigned" }}</p>
+                    <p><span class="font-medium">Position:</span> {{ user.profile.position|default:"Not specified" }}</p>
+                    {% if user.profile.date_of_birth %}
+                    <p><span class="font-medium">Date of Birth:</span> {{ user.profile.date_of_birth }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div>
+                <h2 class="text-lg font-semibold mb-4 text-gray-700">Organization Details</h2>
+                <div class="space-y-3">
+                    <p><span class="font-medium">Company:</span> {{ user.organization.name|default:"Not specified" }}</p>
+                    <p><span class="font-medium">Address:</span> {{ user.organization.address|default:"Not specified" }}</p>
+                    <p><span class="font-medium">Joined:</span> {{ user.date_joined|date:"M d, Y" }}</p>
+                    {% if user.profile.hire_date %}
+                    <p><span class="font-medium">Hire Date:</span> {{ user.profile.hire_date }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Face Recognition Status -->
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <h2 class="text-lg font-semibold mb-3 text-gray-700">Face Recognition Status</h2>
+            <div class="flex items-center">
+                {% if has_face_profile %}
+                <div class="flex-shrink-0 h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <i class="fas fa-check text-green-600"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-900">Face registered</p>
+                    <p class="text-xs text-gray-500">Your face is registered for attendance verification</p>
+                </div>
+                {% else %}
+                <div class="flex-shrink-0 h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-900">Face not registered</p>
+                    <p class="text-xs text-gray-500">You need to register your face for attendance verification</p>
+                </div>
+                <a href="{% url 'register_face' %}" class="ml-auto btn btn-primary bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-3 rounded-md transition-colors">
+                    Register Face
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3 border-t border-gray-200">
+            <a href="{% url 'profile_update' %}" class="btn btn-secondary bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition-colors">
+                <i class="fas fa-edit mr-2"></i> Edit Profile
+            </a>
+            {% if is_admin %}
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-primary bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors">
+                <i class="fas fa-cog mr-2"></i> Admin Panel
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

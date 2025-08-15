@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block title %}Registration Successful{% endblock %}
+
+{% block content %}
+<h2 class="text-success text-center mb-4">✅ Registration Complete!</h2>
+<p class="text-center">User <strong>{{ username }}</strong> has been successfully registered.</p>
+<div class="text-center mt-4">
+    <a href="{% url 'mark_attendance' %}" class="btn btn-outline-secondary">🔁 Go to Attendance</a>
+</div>
+{% endblock %}

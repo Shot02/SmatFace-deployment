@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SmartFace Attendance System with facial recognition technology">
+    <title>{% block title %}SmartFace Attendance System{% endblock %}</title>
+    {% load static %}
+    
+    <!-- Preload important resources -->
+    <link rel="preload" href="https://cdn.tailwindcss.com" as="script">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    
+    <!-- Tailwind CSS with Just-In-Time compiler -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        },
+                        danger: {
+                            500: '#ef4444',
+                            600: '#dc2626',
+                        },
+                        success: {
+                            500: '#10b981',
+                            600: '#059669',
+                        },
+                        warning: {
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'slide-in': 'slideIn 0.3s ease-out forwards',
+                        'fade-out': 'fadeOut 0.5s ease-out forwards',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            },
+            plugins: [
+                require('@tailwindcss/forms'),
+                require('@tailwindcss/typography'),
+            ]
+        }
+    </script>
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="{% static 'favicon.ico' %}" type="image/x-icon">
+    
+    <!-- Custom Styles -->
+    <style>
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; height: 0; padding: 0; margin: 0; }
+        }
+        
+        /* Smooth scroll behavior */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Focus styles for accessibility */
+        [tabindex]:focus-visible, a:focus-visible, button:focus-visible {
+            outline: 2px solid theme('colors.primary.600');
+            outline-offset: 2px;
+        }
+
+        /* Dropdown animations */
+        .dropdown-menu {
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            pointer-events: none;
+        }
+        .dropdown:hover .dropdown-menu,
+        .dropdown:focus-within .dropdown-menu {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="min-h-screen flex flex-col bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm py-3 px-4 sm:px-6 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="{% url 'index' %}" class="flex items-center space-x-3 focus:outline-none">
+                <div class="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+                    <i class="fas fa-user-clock text-primary-600 text-xl"></i>
+                </div>
+                <span class="text-xl font-bold text-primary-700">SmartFace</span>
+            </a>
+            
+            <div class="flex items-center space-x-4 sm:space-x-6">                
+                {% if user.is_authenticated %}
+                    <!-- Desktop Navigation -->
+                    <div class="hidden md:flex items-center space-x-4">
+                        <a href="{% url 'dashboard' %}" class="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors">
+                            <i class="fas fa-tachometer-alt mr-1"></i> Dashboard
+                        </a>
+                        <a href="{% url 'mark_attendance' %}" class="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors">
+                            <i class="fas fa-fingerprint mr-1"></i> Mark Attendance
+                        </a>
+                        {% if user.is_staff %}
+                        <a href="{% url 'admin_dashboard' %}" class="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors">
+                            <i class="fas fa-cog mr-1"></i> Admin
+                        </a>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Mobile menu button -->
+                    <button id="mobile-menu-button" class="md:hidden text-gray-500 hover:text-gray-600 focus:outline-none">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    
+                    <!-- User dropdown -->
+                    <div class="relative dropdown">
+                        <button class="flex items-center space-x-2 focus:outline-none" aria-expanded="false" aria-haspopup="true">
+                            <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
+                                {% if user.profile_picture %}
+                                <img src="{{ user.profile_picture.url }}" alt="Profile" class="w-full h-full object-cover">
+                                {% else %}
+                                <i class="fas fa-user text-primary-600"></i>
+                                {% endif %}
+                            </div>
+                            <span class="hidden md:inline text-sm font-medium text-gray-700">
+                                {{ user.get_short_name|default:user.username }}
+                            </span>
+                            <i class="fas fa-chevron-down text-xs text-gray-500"></i>
+                        </button>
+                        
+                        <div class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                            <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-user-circle mr-2"></i> Profile
+                            </a>
+                            <div class="border-t border-gray-200 my-1"></div>
+                            <form method="POST" action="{% url 'logout' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% else %}
+                    <a href="{% url 'login' %}" class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">
+                        Login
+                    </a>
+                    <a href="{% url 'signup' %}" class="btn btn-primary px-3 py-1.5 text-sm sm:px-4 sm:py-2">
+                        Sign Up
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden mt-3 pb-3 border-t border-gray-200">
+            <div class="pt-2 space-y-1">
+                <a href="{% url 'dashboard' %}" class="block px-3 py-2 text-base font-medium text-gray-600 hover:text-primary-600 hover:bg-gray-50 rounded-md">
+                    <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+                </a>
+                <a href="{% url 'mark_attendance' %}" class="block px-3 py-2 text-base font-medium text-gray-600 hover:text-primary-600 hover:bg-gray-50 rounded-md">
+                    <i class="fas fa-fingerprint mr-2"></i> Mark Attendance
+                </a>
+                {% if user.is_staff %}
+                <a href="{% url 'admin:index' %}" class="block px-3 py-2 text-base font-medium text-gray-600 hover:text-primary-600 hover:bg-gray-50 rounded-md">
+                    <i class="fas fa-cog mr-2"></i> Admin
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages/Alerts -->
+    <div class="fixed top-4 right-4 z-50 space-y-3 w-full max-w-xs">
+        {% for message in messages %}
+        <div class="alert animate-slide-in rounded-lg shadow-lg overflow-hidden bg-white border border-gray-200">
+            <div class="flex items-start p-4">
+                <div class="flex-shrink-0 pt-1">
+                    {% if message.tags == 'success' %}
+                        <i class="fas fa-check-circle text-success-500"></i>
+                    {% elif message.tags == 'error' %}
+                        <i class="fas fa-exclamation-circle text-danger-500"></i>
+                    {% elif message.tags == 'warning' %}
+                        <i class="fas fa-exclamation-triangle text-warning-500"></i>
+                    {% else %}
+                        <i class="fas fa-info-circle text-primary-500"></i>
+                    {% endif %}
+                </div>
+                <div class="ml-3 flex-1 pt-0.5">
+                    <p class="text-sm font-medium text-gray-900">
+                        {{ message }}
+                    </p>
+                </div>
+                <div class="ml-4 flex-shrink-0 flex">
+                    <button class="inline-flex text-gray-400 hover:text-gray-500 focus:outline-none" onclick="this.closest('.alert').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-grow">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <div class="md:flex md:items-center md:justify-between">
+                <div class="flex justify-center md:order-2 space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-gray-500" aria-label="Facebook">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-gray-500" aria-label="Twitter">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-gray-500" aria-label="Instagram">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-gray-500" aria-label="LinkedIn">
+                        <i class="fab fa-linkedin-in"></i>
+                    </a>
+                </div>
+                <div class="mt-8 md:mt-0 md:order-1">
+                    <p class="text-center text-sm text-gray-500">
+                        &copy; {% now "Y" %} SmartFace System. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // DOM Ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-dismiss alerts
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.style.animation = 'fadeOut 0.5s forwards';
+                    setTimeout(() => alert.remove(), 500);
+                }, 5000);
+            });
+            
+            // Mobile menu toggle
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                    mobileMenuButton.innerHTML = mobileMenu.classList.contains('hidden') ? 
+                        '<i class="fas fa-bars text-xl"></i>' : 
+                        '<i class="fas fa-times text-xl"></i>';
+                });
+            }
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('.dropdown')) {
+                    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                        menu.classList.add('hidden');
+                    });
+                }
+            });
+        });
+
+        // Initialize tooltips
+        function initTooltips() {
+            const tooltipTriggers = document.querySelectorAll('[data-tooltip]');
+            tooltipTriggers.forEach(trigger => {
+                const tooltip = document.createElement('div');
+                tooltip.className = 'absolute z-50 invisible bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap';
+                tooltip.textContent = trigger.getAttribute('data-tooltip');
+                trigger.appendChild(tooltip);
+                
+                trigger.addEventListener('mouseenter', () => {
+                    tooltip.classList.remove('invisible');
+                    tooltip.classList.add('visible');
+                });
+                
+                trigger.addEventListener('mouseleave', () => {
+                    tooltip.classList.remove('visible');
+                    tooltip.classList.add('invisible');
+                });
+            });
+        }
+
+        // Initialize form validation
+        function initFormValidation() {
+            const forms = document.querySelectorAll('form[needs-validation]');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(event) {
+                    if (!this.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        this.classList.add('was-validated');
+                    }
+                }, false);
+            });
+        }
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

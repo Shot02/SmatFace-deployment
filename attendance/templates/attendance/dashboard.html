@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - SmartFace{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <div class="flex items-center gap-2 mt-2">
+                <p class="text-gray-600">
+                    Welcome back, <span class="font-medium">{{ user.get_full_name }}</span>!
+                    {% if user.profile.position %}({{ user.profile.position }}){% endif %}
+                </p>
+                <span class="text-sm px-2 py-1 rounded-full 
+                    {% if today_attendance %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {% if today_attendance %}
+                        <i class="fas fa-check-circle mr-1"></i>{{ today_attendance.get_status_display }}
+                    {% else %}
+                        <i class="fas fa-exclamation-circle mr-1"></i>Not marked
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+        <a href="{% url 'mark_attendance' %}" class="btn btn-primary bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors">
+            {% if today_attendance and not today_attendance.time_out %}
+            <!-- User has marked in but not out - show Mark Out button -->
+                <a href="{% url 'mark_attendance' %}?action=mark_out" 
+                    class="btn btn-primary bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition-colors">
+                    <i class="fas fa-sign-out-alt mr-2"></i> Mark Out
+                </a>
+            {% else %}
+            <!-- User hasn't marked in or has completed attendance - show Mark In button -->
+                <a href="{% url 'mark_attendance' %}?action=mark_in" 
+                    class="btn btn-primary bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition-colors">
+                    <i class="fas fa-sign-in-alt mr-2"></i> Mark In
+                </a>
+            {% endif %}
+        </a>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Attendance Rate Card -->
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Monthly Attendance</h3>
+                    <p class="text-3xl font-bold mt-1 text-blue-600">{{ attendance_rate }}%</p>
+                </div>
+                <div class="p-3 bg-blue-50 rounded-lg text-blue-600">
+                    <i class="fas fa-calendar-check text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ attendance_rate }}%"></div>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">
+                    {{ present_count }} present days / 30
+                </p>
+            </div>
+        </div>
+
+        <!-- Present Days Card -->
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Present Days</h3>
+                    <p class="text-3xl font-bold mt-1 text-green-600">{{ present_count }}</p>
+                </div>
+                <div class="p-3 bg-green-50 rounded-lg text-green-600">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <p class="text-xs text-gray-500">
+                    {% widthratio present_count 30 100 %}% of working days
+                </p>
+            </div>
+        </div>
+
+        <!-- Late Days Card -->
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Late Days</h3>
+                    <p class="text-3xl font-bold mt-1 text-yellow-600">{{ late_count }}</p>
+                </div>
+                <div class="p-3 bg-yellow-50 rounded-lg text-yellow-600">
+                    <i class="fas fa-clock text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <p class="text-xs text-gray-500">
+                    {% if present_count > 0 %}
+                        {% widthratio late_count present_count 100 %}% of total attendance
+                    {% else %}
+                        0% of total attendance
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- Daily Motivation Card -->
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-indigo-200 hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500">Daily Boost</h3>
+                    <p id="daily-motivation" class="text-lg font-medium mt-1 text-indigo-700 min-h-[3rem]">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </p>
+                </div>
+                <div class="p-3 bg-indigo-50 rounded-lg text-indigo-600">
+                    <i class="fas fa-robot text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 flex justify-between items-center">
+                <button id="refresh-motivation" class="text-xs text-indigo-600 hover:text-indigo-800 transition-colors">
+                    <i class="fas fa-sync-alt mr-1"></i> New Message
+                </button>
+                <div class="flex space-x-2">
+                    <button id="motivation-like" class="text-xs text-gray-400 hover:text-green-500 transition-colors">
+                        <i class="far fa-thumbs-up"></i>
+                    </button>
+                    <button id="motivation-dislike" class="text-xs text-gray-400 hover:text-red-500 transition-colors">
+                        <i class="far fa-thumbs-down"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Attendance Chart (2/3 width) -->
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 lg:col-span-2">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Monthly Attendance Trend</h3>
+                <div class="flex items-center text-sm text-gray-500">
+                    <i class="far fa-clock mr-1"></i>
+                    <span id="current-time"></span>
+                </div>
+            </div>
+            <canvas id="attendanceChart" height="250"></canvas>
+        </div>
+
+        <!-- Recent Activity (1/3 width) -->
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">Recent Activity</h3>
+                <a href="#" class="text-sm text-blue-600 hover:text-blue-800">
+                    View All <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            <div class="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                {% for record in recent_activity %}
+                <div class="flex items-start p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div class="flex-shrink-0 mt-1 text-lg 
+                        {% if record.status == 'PRESENT' %}text-green-500{% else %}text-yellow-500{% endif %}">
+                        {% if record.status == 'PRESENT' %}
+                            <i class="fas fa-check-circle"></i>
+                        {% else %}
+                            <i class="fas fa-clock"></i>
+                        {% endif %}
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <p class="text-sm font-medium">
+                            {{ record.get_status_display }} on {{ record.date }}
+                        </p>
+                        <p class="text-xs text-gray-500">
+                            {{ record.time_in|time }}
+                            {% if record.time_out %} - {{ record.time_out|time }}{% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-4">
+                    <i class="far fa-calendar-times text-2xl text-gray-300 mb-2"></i>
+                    <p class="text-sm text-gray-500">No attendance records yet</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard Sections -->
+    {% if is_admin %}
+    <div class="mb-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 pb-2 border-b border-gray-200">Admin Dashboard</h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Top Attendees -->
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">Top Attendees</h3>
+                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                        This Month
+                    </span>
+                </div>
+                <div class="space-y-3">
+                    {% for user in leaderboard %}
+                    <div class="flex items-center p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                        <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mr-3 font-medium">
+                            {{ forloop.counter }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium truncate">{{ user.get_full_name }}</p>
+                            <p class="text-sm text-gray-500 truncate">
+                                {{ user.attendance_count }} present days
+                            </p>
+                        </div>
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full whitespace-nowrap">
+                            {{ user.department.name|default:"No Dept" }}
+                        </span>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4">
+                        <p class="text-sm text-gray-500">No attendance data available</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Department Performance -->
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                <h3 class="text-lg font-semibold mb-4">Department Performance</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Staff</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for dept in department_stats %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ dept.name }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-500">{{ dept.staff_count }}</td>
+                                <td class="px-4 py-3 text-sm">
+                                    <div class="flex items-center">
+                                        <span class="mr-2">{% if dept.staff_count > 0 %}{% widthratio dept.present_count dept.staff_count 100 %}%{% else %}0%{% endif %}</span>
+                                        <div class="w-full bg-gray-200 rounded-full h-2">
+                                            <div class="bg-blue-600 h-2 rounded-full" 
+                                                style="width: {% if dept.staff_count > 0 %}{% widthratio dept.present_count dept.staff_count 100 %}%{% else %}0%{% endif %}"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="px-4 py-3 text-sm text-gray-500 text-center">No department data available</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- JavaScript Section -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Daily Motivation System
+let currentMotivation = '';
+
+async function fetchDailyMotivation() {
+    const element = document.getElementById('daily-motivation');
+    element.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    
+    try {
+        const response = await fetch('{% url "get_ai_message" %}');
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        
+        const data = await response.json();
+        currentMotivation = data.message;
+        element.innerHTML = `<span class="animate-fade-in">${data.message}</span>`;
+    } catch (error) {
+        console.error('Failed to fetch motivation:', error);
+        currentMotivation = "Stay awesome today! 😊";
+        element.textContent = currentMotivation;
+    }
+}
+
+// Feedback functions
+async function sendAIFeedback(isPositive) {
+    try {
+        const response = await fetch('{% url "ai_feedback" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                is_positive: isPositive,
+                message: currentMotivation
+            })
+        });
+        
+        if (response.ok) {
+            showAINotification(isPositive ? 'Thanks for your feedback!' : 'We\'ll improve next time!', 3000);
+        }
+    } catch (error) {
+        console.error('Failed to send feedback:', error);
+    }
+}
+
+function showAINotification(message, duration) {
+    const notification = document.createElement('div');
+    notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg animate-fade-in-out z-50';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, duration);
+}
+
+// CSRF Token helper
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Initial load
+    fetchDailyMotivation();
+
+    // Refresh button
+    document.getElementById('refresh-motivation')?.addEventListener('click', fetchDailyMotivation);
+
+    // Feedback handlers
+    document.getElementById('motivation-like')?.addEventListener('click', () => {
+        sendAIFeedback(true);
+    });
+
+    document.getElementById('motivation-dislike')?.addEventListener('click', () => {
+        sendAIFeedback(false);
+    });
+
+    // Monthly Attendance Chart
+    const ctx = document.getElementById('attendanceChart').getContext('2d');
+    const monthlyData = {{ monthly_data|safe }};
+    
+    const months = monthlyData.map(item => {
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return monthNames[item.date__month - 1];
+    });
+    
+    const presentData = monthlyData.map(item => item.present || 0);
+    const lateData = monthlyData.map(item => item.late || 0);
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: months,
+            datasets: [
+                {
+                    label: 'Present',
+                    data: presentData,
+                    backgroundColor: '#10B981',
+                    borderRadius: 4
+                },
+                {
+                    label: 'Late',
+                    data: lateData,
+                    backgroundColor: '#F59E0B',
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                }
+            },
+            scales: {
+                x: {
+                    stacked: true,
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // Real-time clock
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('current-time').textContent = 
+            now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+});
+</script>
+
+<style>
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.animate-fade-in-out {
+    animation: fadeInOut 3s ease-in-out forwards;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(10px); }
+    10% { opacity: 1; transform: translateY(0); }
+    90% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-10px); }
+}
+</style>
+{% endblock %}

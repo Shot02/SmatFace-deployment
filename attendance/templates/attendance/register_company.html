@@ -1,0 +1,397 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+  <div class="container mx-auto px-4 py-8 sm:py-12">
+    <!-- Progress Steps -->
+    <div class="max-w-3xl mx-auto mb-8 sm:mb-12">
+      <div class="flex justify-between relative">
+        {% for step_info in progress_steps %}
+        <div class="flex-1 flex flex-col items-center relative z-10">
+          <div class="w-12 h-12 rounded-full flex items-center justify-center mb-2 
+                      {% if step >= step_info.number %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-400{% endif %}">
+            {{ step_info.number }}
+          </div>
+          <span class="text-sm font-medium text-center 
+                       {% if step >= step_info.number %}text-blue-600{% else %}text-gray-500{% endif %}">
+            {{ step_info.title }}
+          </span>
+        </div>
+        {% endfor %}
+        
+        <!-- Progress Bar -->
+        <div class="absolute top-6 left-0 right-0 h-1.5 bg-gray-200">
+          <div class="h-full bg-blue-600 transition-all duration-300" 
+               style="width: {{ progress_percentage }}%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Container -->
+    <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+      <!-- Error Display -->
+      {% if error %}
+      <div class="bg-red-50 border-l-4 border-red-500 p-4" role="alert">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm text-red-700">{{ error }}</p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Step 1: Company Information -->
+      {% if step == 1 %}
+      <form method="POST" enctype="multipart/form-data" class="p-6 sm:p-8" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="step" value="1">
+        
+        <div class="space-y-6">
+          <h3 class="text-lg font-medium text-blue-600 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+              <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 0v12h8V4H6z" clip-rule="evenodd"/>
+            </svg>
+            Company Information
+          </h3>
+
+          <!-- Company Name -->
+          <div>
+            <label for="{{ form.company_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              {{ form.company_name.label }} <span class="text-red-500" aria-label="required">*</span>
+            </label>
+            {{ form.company_name }}
+            {% if form.company_name.errors %}
+              <p class="mt-2 text-sm text-red-600" role="alert">{{ form.company_name.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Industry -->
+            <div>
+              <label for="{{ form.industry.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                {{ form.industry.label }} <span class="text-red-500" aria-label="required">*</span>
+              </label>
+              {{ form.industry }}
+              {% if form.industry.errors %}
+                <p class="mt-2 text-sm text-red-600" role="alert">{{ form.industry.errors.0 }}</p>
+              {% endif %}
+            </div>
+
+            <!-- Company Size -->
+            <div>
+              <label for="{{ form.company_size.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                {{ form.company_size.label }} <span class="text-red-500" aria-label="required">*</span>
+              </label>
+              {{ form.company_size }}
+              {% if form.company_size.errors %}
+                <p class="mt-2 text-sm text-red-600" role="alert">{{ form.company_size.errors.0 }}</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Address -->
+          <div>
+            <label for="{{ form.address.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              {{ form.address.label }} <span class="text-red-500" aria-label="required">*</span>
+            </label>
+            {{ form.address }}
+            {% if form.address.errors %}
+              <p class="mt-2 text-sm text-red-600" role="alert">{{ form.address.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- Company Logo -->
+          <div>
+            <label for="{{ form.logo.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              {{ form.logo.label }}
+            </label>
+            <div class="mt-1">
+              <label for="{{ form.logo.id_for_label }}" class="cursor-pointer">
+                <div class="bg-gray-50 hover:bg-gray-100 transition-colors rounded-md border border-gray-300 px-4 py-3 w-full">
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600" id="file-name">Choose a file...</span>
+                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                  </div>
+                </div>
+                {{ form.logo }}
+              </label>
+            </div>
+            {% if form.logo.errors %}
+              <p class="mt-2 text-sm text-red-600" role="alert">{{ form.logo.errors.0 }}</p>
+            {% endif %}
+            <p class="mt-2 text-xs text-gray-500">Recommended size: 300x300 pixels (JPEG or PNG, max 5MB)</p>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="mt-8 flex justify-end">
+          <button type="submit" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+            Continue
+            <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </form>
+      {% endif %}
+
+      <!-- Step 2: Departments -->
+      {% if step == 2 %}
+      <form method="POST" class="p-6 sm:p-8" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="step" value="2">
+        
+        <div class="space-y-6">
+          <h3 class="text-lg font-medium text-blue-600 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+              <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clip-rule="evenodd"/>
+            </svg>
+            Departments
+          </h3>
+          <p class="text-sm text-gray-500">Add at least one department to get started. You can add more later.</p>
+          
+          <div class="mt-4">
+            <label for="department-count" class="block text-sm font-medium text-gray-700 mb-2">Number of Departments</label>
+            <select name="department_count" id="department-count" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+              {% for i in department_range %}
+                <option value="{{ i }}" {% if department_count == i %}selected{% endif %}>{{ i }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div id="department-fields">
+            {% include 'attendance/dept_field.html' with fields=department_fields %}
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="mt-8 flex justify-between">
+          <a href="{% url 'register_company' %}?step=1" 
+             class="inline-flex items-center px-5 py-3 border border-gray-300 text-base font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+            <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+            Back
+          </a>
+
+          <button type="submit" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+            Continue
+            <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </form>
+      {% endif %}
+
+      <!-- Step 3: Admin Setup -->
+      {% if step == 3 %}
+      <form method="POST" class="p-6 sm:p-8" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="step" value="3">
+        
+        <div class="space-y-6">
+          <h3 class="text-lg font-medium text-blue-600 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+            </svg>
+            Admin Account Setup
+          </h3>
+          <p class="text-sm text-gray-500">This will be your administrator account for managing the company.</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- First Name -->
+            <div>
+              <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                {{ form.first_name.label }} <span class="text-red-500" aria-label="required">*</span>
+              </label>
+              {{ form.first_name }}
+              {% if form.first_name.errors %}
+                <p class="mt-2 text-sm text-red-600" role="alert">{{ form.first_name.errors.0 }}</p>
+              {% endif %}
+            </div>
+
+            <!-- Last Name -->
+            <div>
+              <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                {{ form.last_name.label }} <span class="text-red-500" aria-label="required">*</span>
+              </label>
+              {{ form.last_name }}
+              {% if form.last_name.errors %}
+                <p class="mt-2 text-sm text-red-600" role="alert">{{ form.last_name.errors.0 }}</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div>
+            <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              {{ form.email.label }} <span class="text-red-500" aria-label="required">*</span>
+            </label>
+            {{ form.email }}
+            {% if form.email.errors %}
+              <p class="mt-2 text-sm text-red-600" role="alert">{{ form.email.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- Password -->
+          <div>
+            <label for="{{ form.password1.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              {{ form.password1.label }} <span class="text-red-500" aria-label="required">*</span>
+            </label>
+            {{ form.password1 }}
+            {% if form.password1.errors %}
+              <p class="mt-2 text-sm text-red-600" role="alert">{{ form.password1.errors.0 }}</p>
+            {% endif %}
+            <p class="mt-2 text-xs text-gray-500">Must be at least 8 characters long</p>
+          </div>
+
+          <!-- Confirm Password -->
+          <div>
+            <label for="{{ form.password2.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+              {{ form.password2.label }} <span class="text-red-500" aria-label="required">*</span>
+            </label>
+            {{ form.password2 }}
+            {% if form.password2.errors %}
+              <p class="mt-2 text-sm text-red-600" role="alert">{{ form.password2.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- Terms -->
+          <div class="flex items-start">
+            <div class="flex items-center h-5">
+              {{ form.terms }}
+            </div>
+            <div class="ml-3 text-sm">
+              <label for="{{ form.terms.id_for_label }}" class="font-medium text-gray-700">
+                I agree to the <a href="#" class="text-blue-600 hover:text-blue-500 underline">Terms and Conditions</a>
+              </label>
+              {% if form.terms.errors %}
+                <p class="mt-2 text-sm text-red-600" role="alert">{{ form.terms.errors.0 }}</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="mt-8 flex justify-between">
+          <a href="{% url 'register_company' %}?step=2" 
+             class="inline-flex items-center px-5 py-3 border border-gray-300 text-base font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+            <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+            Back
+          </a>
+
+          <button type="submit" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+            Complete Registration
+            <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // File input display with validation
+  const fileInput = document.querySelector('input[type="file"]');
+  const fileNameDisplay = document.getElementById('file-name');
+  
+  if (fileInput && fileNameDisplay) {
+    fileInput.addEventListener('change', function() {
+      const file = this.files[0];
+      if (file) {
+        // Validate file size (5MB limit)
+        if (file.size > 5 * 1024 * 1024) {
+          alert('File size must be less than 5MB');
+          this.value = '';
+          fileNameDisplay.textContent = 'Choose a file...';
+          return;
+        }
+        
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+        if (!allowedTypes.includes(file.type)) {
+          alert('Please select a JPEG or PNG image');
+          this.value = '';
+          fileNameDisplay.textContent = 'Choose a file...';
+          return;
+        }
+        
+        fileNameDisplay.textContent = file.name;
+      } else {
+        fileNameDisplay.textContent = 'Choose a file...';
+      }
+    });
+  }
+
+  // Department count change handler with error handling
+  const departmentCount = document.getElementById('department-count');
+  if (departmentCount) {
+    departmentCount.addEventListener('change', function() {
+      const count = parseInt(this.value);
+      if (isNaN(count) || count < 1 || count > 9) return;
+      
+      const formData = new FormData();
+      formData.append('department_count', count);
+      formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+      
+      fetch('{% url "get_department_fields" %}', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.text();
+      })
+      .then(html => {
+        const fieldsContainer = document.getElementById('department-fields');
+        if (fieldsContainer) {
+          fieldsContainer.innerHTML = html;
+        }
+      })
+      .catch(error => {
+        console.error('Error updating department fields:', error);
+        alert('Error updating department fields. Please refresh the page.');
+      });
+    });
+  }
+
+  // Form validation enhancement
+  const forms = document.querySelectorAll('form');
+  forms.forEach(form => {
+    form.addEventListener('submit', function(e) {
+      const requiredFields = form.querySelectorAll('[required]');
+      let hasErrors = false;
+      
+      requiredFields.forEach(field => {
+        if (!field.value.trim()) {
+          hasErrors = true;
+          field.classList.add('border-red-500');
+        } else {
+          field.classList.remove('border-red-500');
+        }
+      });
+      
+      if (hasErrors) {
+        e.preventDefault();
+        alert('Please fill in all required fields');
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

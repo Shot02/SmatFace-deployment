@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Face Login - SmartFace{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-8 px-4">
+    <div class="bg-white rounded-lg shadow-md p-6 text-center">
+        <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-user-check text-blue-600 text-2xl"></i>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-800 mb-2">Face Login</h1>
+        <p class="text-gray-600 mb-6">Look at the camera to verify your identity</p>
+        
+        <div class="relative bg-gray-100 rounded-lg overflow-hidden mb-6">
+            <!-- Camera Feed -->
+            <video id="login-video" class="w-full h-auto" autoplay playsinline></video>
+            
+            <!-- Face Outline -->
+            <div id="face-outline" class="absolute inset-0 flex items-center justify-center pointer-events-none hidden">
+                <div class="border-4 border-blue-500 rounded-full w-64 h-64"></div>
+            </div>
+            
+            <!-- Status Messages -->
+            <div id="login-status" class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-center hidden">
+                <p id="status-message">Position your face in the frame</p>
+            </div>
+        </div>
+        
+        <button id="verify-btn" class="btn btn-primary w-full mb-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors">
+            <i class="fas fa-sign-in-alt mr-2"></i> Login with Face
+        </button>
+        
+        <div id="processing-section" class="hidden text-center py-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+            <p id="processing-message" class="text-blue-600">Verifying your identity...</p>
+        </div>
+        
+        <div id="error-section" class="hidden bg-red-50 border-l-4 border-red-500 p-4 mb-4 text-left">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-circle text-red-500"></i>
+                </div>
+                <div class="ml-3">
+                    <p id="error-message" class="text-sm text-red-700">Error message will appear here</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4 text-center">
+            <a href="{% url 'login' %}" class="text-blue-600 hover:text-blue-800">
+                <i class="fas fa-arrow-left mr-1"></i> Back to login options
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+// CSRF Token helper
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById('login-video');
+    const faceOutline = document.getElementById('face-outline');
+    const statusDiv = document.getElementById('login-status');
+    const statusMessage = document.getElementById('status-message');
+    const verifyBtn = document.getElementById('verify-btn');
+    const processingSection = document.getElementById('processing-section');
+    const processingMessage = document.getElementById('processing-message');
+    const errorSection = document.getElementById('error-section');
+    const errorMessage = document.getElementById('error-message');
+    
+    let stream = null;
+    let isProcessing = false;
+    let faceDetectionInterval = null;
+
+    // Start camera
+    async function startCamera() {
+        try {
+            // Request camera with specific constraints for better quality
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: 'user',
+                    frameRate: { ideal: 30 }
+                } 
+            });
+            video.srcObject = stream;
+            
+            // Wait for video to be ready
+            video.onloadedmetadata = () => {
+                video.play();
+                faceOutline.classList.remove('hidden');
+                statusDiv.classList.remove('hidden');
+                statusMessage.textContent = 'Position your face in frame';
+                
+                // Start face detection
+                startFaceDetection();
+            };
+        } catch (err) {
+            console.error("Camera error:", err);
+            showError('Could not access camera. Please enable camera permissions and refresh the page.');
+            verifyBtn.disabled = true;
+            verifyBtn.innerHTML = '<i class="fas fa-camera-slash mr-2"></i> Camera Error';
+        }
+    }
+    
+    // Periodically check for face in frame
+    function startFaceDetection() {
+        // Clear any existing interval
+        if (faceDetectionInterval) {
+            clearInterval(faceDetectionInterval);
+        }
+        
+        faceDetectionInterval = setInterval(async () => {
+            if (isProcessing) return;
+            
+            try {
+                // Create canvas to capture frame
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Convert to blob
+                const blob = await new Promise(resolve => 
+                    canvas.toBlob(resolve, 'image/jpeg', 0.7)
+                );
+                
+                // Create FormData
+                const formData = new FormData();
+                formData.append('image', blob, 'face_check.jpg');
+                
+                // Send to server for face detection
+                const response = await fetch('/face-detection-api/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.is_valid) {
+                    statusMessage.textContent = 'Face detected! Ready to login';
+                    statusDiv.classList.add('bg-green-500');
+                    statusDiv.classList.remove('bg-red-500', 'bg-black');
+                    verifyBtn.disabled = false;
+                    
+                    // Update face outline position if face location is provided
+                    if (result.face_location) {
+                        const [top, right, bottom, left] = result.face_location;
+                        const faceWidth = right - left;
+                        const faceHeight = bottom - top;
+                        const outlineSize = Math.max(faceWidth, faceHeight) * 1.2; // 20% larger than face
+                        
+                        const outline = faceOutline.querySelector('div');
+                        outline.style.width = `${outlineSize}px`;
+                        outline.style.height = `${outlineSize}px`;
+                    }
+                } else {
+                    statusMessage.textContent = result.error || 'Position your face properly';
+                    statusDiv.classList.add('bg-red-500');
+                    statusDiv.classList.remove('bg-green-500', 'bg-black');
+                }
+            } catch (error) {
+                console.error('Face detection error:', error);
+            }
+        }, 1000); // Check every second
+    }
+
+    // Show error message
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorSection.classList.remove('hidden');
+        setTimeout(() => {
+            errorSection.classList.add('bg-red-100');
+            setTimeout(() => {
+                errorSection.classList.remove('bg-red-100');
+            }, 300);
+        }, 100);
+    }
+
+    // Hide error message
+    function hideError() {
+        errorSection.classList.add('hidden');
+    }
+
+    // Verify face and login
+    verifyBtn.addEventListener('click', async function() {
+        if (isProcessing) return;
+        
+        isProcessing = true;
+        verifyBtn.disabled = true;
+        processingSection.classList.remove('hidden');
+        hideError();
+        statusMessage.textContent = 'Verifying your identity...';
+        
+        try {
+            // Create canvas to capture frame
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert to blob
+            const blob = await new Promise(resolve => 
+                canvas.toBlob(resolve, 'image/jpeg', 0.9)
+            );
+            
+            // Create FormData
+            const formData = new FormData();
+            formData.append('face_image', blob, 'face.jpg');
+            formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+            
+            // Send to server for verification
+            const response = await fetch('/login/face/verify/', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                statusMessage.textContent = 'Login successful! Redirecting...';
+                processingMessage.textContent = 'Login successful! Redirecting...';
+                statusDiv.classList.add('bg-green-500');
+                statusDiv.classList.remove('bg-red-500', 'bg-black');
+                
+                // If attendance was marked, show message
+                if (result.attendance_marked) {
+                    processingMessage.textContent = `Login successful! Attendance marked. ${result.message}`;
+                }
+                
+                // Redirect to dashboard after delay
+                setTimeout(() => {
+                    window.location.href = result.redirect_url || '/dashboard/';
+                }, 1500);
+            } else {
+                throw new Error(result.error || 'Face verification failed');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            showError(error.message || 'Failed to verify your face. Please try again or use email login.');
+            statusMessage.textContent = 'Verification failed';
+            statusDiv.classList.add('bg-red-500');
+            statusDiv.classList.remove('bg-green-500', 'bg-black');
+            processingMessage.textContent = 'Error: ' + (error.message || 'Unknown error');
+            
+            // Re-enable verify button after delay
+            setTimeout(() => {
+                verifyBtn.disabled = false;
+                processingSection.classList.add('hidden');
+                verifyBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i> Try Again';
+            }, 2000);
+        } finally {
+            isProcessing = false;
+        }
+    });
+
+    // Initialize camera
+    startCamera();
+
+    // Cleanup
+    window.addEventListener('beforeunload', () => {
+        if (faceDetectionInterval) {
+            clearInterval(faceDetectionInterval);
+        }
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    });
+});
+</script>
+
+<style>
+#face-outline div {
+    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+}
+
+#login-status {
+    transition: background-color 0.3s ease;
+}
+
+#verify-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}

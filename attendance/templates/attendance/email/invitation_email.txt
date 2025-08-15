@@ -1,0 +1,23 @@
+Dear {{ inviter }},
+
+We’re officially inviting you to join {{ organization }}.
+
+What: A legendary gathering of [cool humans/insert your event theme here].
+When: Coming soon (aka "when we fix our email server"). ⏳
+Where: A top-secret location (read: coming soon).
+Why: Because life’s too short for boring invitations.
+
+⚠️ Disclaimer: Side effects may include:
+
+Uncontrollable excitement
+
+Marking your calendar in advance
+
+Telling all your friends (please do)
+
+Stay tuned for actual details… once our tech team stops arguing with the server. 😅
+
+Cheers,
+
+
+If you did not expect this invitation, you can ignore this message.

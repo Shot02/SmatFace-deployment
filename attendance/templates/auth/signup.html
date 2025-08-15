@@ -1,0 +1,505 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Join Your Organization - SmartFace{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-4xl mx-auto">
+    <!-- Logo and Title -->
+    <div class="text-center mb-12">
+      <div class="inline-flex items-center justify-center h-20 w-20 rounded-full bg-blue-100 mb-6">
+        <i class="fas fa-building text-blue-600 text-3xl"></i>
+      </div>
+      <h1 class="text-4xl font-bold text-gray-900">Join Your Organization</h1>
+      <p class="mt-4 text-xl text-gray-600">Create your account to get started with SmartFace</p>
+    </div>
+    
+    <!-- Progress Steps -->
+    <div class="max-w-3xl mx-auto mb-12">
+      <div class="flex justify-between relative">
+        <div class="flex-1 flex flex-col items-center relative z-10">
+          <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-blue-600 text-white shadow-lg">
+            <i class="fas fa-user-plus text-2xl"></i>
+          </div>
+          <span class="text-base font-semibold text-center text-blue-600">
+            Account Details
+          </span>
+        </div>
+        
+        <div class="flex-1 flex flex-col items-center relative z-10">
+          <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-gray-100 text-gray-400 shadow">
+            <i class="fas fa-camera text-2xl"></i>
+          </div>
+          <span class="text-base font-semibold text-center text-gray-500">
+            Face Registration
+          </span>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="absolute top-8 left-0 right-0 h-3 bg-gray-200 rounded-full">
+          <div class="h-full bg-blue-600 rounded-full transition-all duration-500 shadow-sm" style="width: 50%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Container -->
+    <div class="bg-white rounded-3xl shadow-2xl overflow-hidden">
+      <!-- Header -->
+      <div class="bg-blue-600 p-10 relative overflow-hidden">
+        <div class="absolute top-0 right-0 opacity-10">
+          <i class="fas fa-fingerprint text-[120px] text-white transform rotate-12 translate-x-8 -translate-y-8"></i>
+        </div>
+        <h2 class="text-3xl font-bold text-white relative z-10">Account Information</h2>
+        <p class="text-blue-100 mt-3 relative z-10 text-lg max-w-lg">Please provide your details to create your SmartFace account</p>
+      </div>
+      
+      <form method="POST" class="p-10" novalidate>
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+        <div class="bg-red-50 border-l-4 border-red-500 p-6 mb-10 rounded-r-lg shadow">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-red-500 text-xl"></i>
+            </div>
+            <div class="ml-4">
+              {% for error in form.non_field_errors %}
+              <p class="text-base text-red-700">{{ error }}</p>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+        <div class="space-y-10">
+          <!-- Organization Section -->
+          <div class="bg-gray-50 p-8 rounded-2xl border border-gray-200">
+            <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+              <i class="fas fa-building mr-3 text-blue-600 text-2xl"></i>
+              Organization Details
+            </h3>
+            
+            <!-- Organization -->
+            <div class="space-y-2">
+              <label for="{{ form.organization.id_for_label }}" class="block text-lg font-medium text-gray-700">
+                Organization Name <span class="text-red-500">*</span>
+              </label>
+              <div class="mt-1">
+                {{ form.organization }}
+              </div>
+              {% if form.organization.errors %}
+              <p class="mt-3 text-base text-red-600 flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i> {{ form.organization.errors.0 }}
+              </p>
+              {% endif %}
+              <p class="mt-3 text-base text-gray-500 flex items-center">
+                <i class="fas fa-info-circle mr-2 text-blue-500"></i>
+                Enter the name exactly as provided by your organization
+              </p>
+            </div>
+            
+            <!-- Department -->
+            <div class="mt-8 space-y-2">
+              <label for="{{ form.department.id_for_label }}" class="block text-lg font-medium text-gray-700">
+                Department
+              </label>
+              <div class="relative mt-1">
+                {{ form.department }}
+                <div id="department-loading" class="hidden absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                  <i class="fas fa-circle-notch fa-spin text-blue-500 text-xl"></i>
+                </div>
+              </div>
+              {% if form.department.errors %}
+              <p class="mt-3 text-base text-red-600 flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i> {{ form.department.errors.0 }}
+              </p>
+              {% endif %}
+              <p id="department-help" class="mt-3 text-base text-gray-500 flex items-center">
+                <i class="fas fa-lightbulb mr-2 text-yellow-500"></i>
+                Departments will load after selecting your organization
+              </p>
+            </div>
+          </div>
+          
+          <!-- Personal Information Section -->
+          <div class="bg-gray-50 p-8 rounded-2xl border border-gray-200">
+            <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+              <i class="fas fa-user mr-3 text-blue-600 text-2xl"></i>
+              Personal Information
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <!-- First Name -->
+              <div class="space-y-2">
+                <label for="{{ form.first_name.id_for_label }}" class="block text-lg font-medium text-gray-700">
+                  First Name <span class="text-red-500">*</span>
+                </label>
+                <div class="mt-1">
+                  {{ form.first_name }}
+                </div>
+                {% if form.first_name.errors %}
+                <p class="mt-3 text-base text-red-600 flex items-center">
+                  <i class="fas fa-exclamation-circle mr-2"></i> {{ form.first_name.errors.0 }}
+                </p>
+                {% endif %}
+              </div>
+              
+              <!-- Last Name -->
+              <div class="space-y-2">
+                <label for="{{ form.last_name.id_for_label }}" class="block text-lg font-medium text-gray-700">
+                  Last Name <span class="text-red-500">*</span>
+                </label>
+                <div class="mt-1">
+                  {{ form.last_name }}
+                </div>
+                {% if form.last_name.errors %}
+                <p class="mt-3 text-base text-red-600 flex items-center">
+                  <i class="fas fa-exclamation-circle mr-2"></i> {{ form.last_name.errors.0 }}
+                </p>
+                {% endif %}
+              </div>
+            </div>
+            
+            <!-- Email -->
+            <div class="mt-8 space-y-2">
+              <label for="{{ form.email.id_for_label }}" class="block text-lg font-medium text-gray-700">
+                Email Address <span class="text-red-500">*</span>
+              </label>
+              <div class="mt-1">
+                {{ form.email }}
+              </div>
+              {% if form.email.errors %}
+              <p class="mt-3 text-base text-red-600 flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i> {{ form.email.errors.0 }}
+              </p>
+              {% endif %}
+            </div>
+            
+            <!-- Position -->
+            <div class="mt-8 space-y-2">
+              <label for="{{ form.position.id_for_label }}" class="block text-lg font-medium text-gray-700">
+                Position <span class="text-red-500">*</span>
+              </label>
+              <div class="mt-1">
+                {{ form.position }}
+              </div>
+              {% if form.position.errors %}
+              <p class="mt-3 text-base text-red-600 flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i> {{ form.position.errors.0 }}
+              </p>
+              {% endif %}
+            </div>
+          </div>
+          
+          <!-- Security Section -->
+          <div class="bg-gray-50 p-8 rounded-2xl border border-gray-200">
+            <h3 class="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+              <i class="fas fa-lock mr-3 text-blue-600 text-2xl"></i>
+              Security
+            </h3>
+            
+            <!-- Password -->
+            <div class="space-y-2">
+              <label for="{{ form.password1.id_for_label }}" class="block text-lg font-medium text-gray-700">
+                Password <span class="text-red-500">*</span>
+              </label>
+              <div class="relative mt-1">
+                {{ form.password1 }}
+                <button type="button" class="toggle-password absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-gray-700">
+                  <i class="fas fa-eye text-xl"></i>
+                </button>
+              </div>
+              {% if form.password1.errors %}
+              <p class="mt-3 text-base text-red-600 flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i> {{ form.password1.errors.0 }}
+              </p>
+              {% endif %}
+            </div>
+            
+            <!-- Password Requirements -->
+            <div class="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+              <h4 class="text-lg font-medium text-blue-800 mb-3">Password Requirements:</h4>
+              <ul class="text-base text-blue-700 space-y-2 pl-6 list-disc">
+                <li>At least 8 characters</li>
+                <li>1 uppercase letter</li>
+                <li>1 lowercase letter</li>
+                <li>1 number</li>
+                <li>1 special character (e.g., !@#$%)</li>
+              </ul>
+            </div>
+            
+            <!-- Confirm Password -->
+            <div class="mt-8 space-y-2">
+              <label for="{{ form.password2.id_for_label }}" class="block text-lg font-medium text-gray-700">
+                Confirm Password <span class="text-red-500">*</span>
+              </label>
+              <div class="relative mt-1">
+                {{ form.password2 }}
+                <button type="button" class="toggle-password absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-gray-700">
+                  <i class="fas fa-eye text-xl"></i>
+                </button>
+              </div>
+              {% if form.password2.errors %}
+              <p class="mt-3 text-base text-red-600 flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i> {{ form.password2.errors.0 }}
+              </p>
+              {% endif %}
+            </div>
+          </div>
+          
+          <!-- Terms -->
+          <div class="flex items-start p-6 bg-gray-50 rounded-2xl border border-gray-200">
+            <div class="flex items-center h-6">
+              {{ form.terms }}
+            </div>
+            <div class="ml-4">
+              <label for="{{ form.terms.id_for_label }}" class="text-lg font-medium text-gray-700">
+                I agree to the <a href="#" class="text-blue-600 hover:text-blue-500 underline">Terms and Conditions</a> and <a href="#" class="text-blue-600 hover:text-blue-500 underline">Privacy Policy</a>
+              </label>
+              {% if form.terms.errors %}
+              <p class="mt-3 text-base text-red-600 flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i> {{ form.terms.errors.0 }}
+              </p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="mt-12 flex flex-col sm:flex-row gap-6">
+          <a href="{% url 'login' %}" class="flex-1 py-4 px-6 border border-gray-300 rounded-xl shadow-sm text-lg font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 text-center transition-all duration-200 flex items-center justify-center">
+            <i class="fas fa-arrow-left mr-3 text-lg"></i> Back to Login
+          </a>
+          <button type="submit" class="flex-1 flex justify-center items-center py-4 px-6 border border-transparent rounded-xl shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+            Continue to Face Registration
+            <i class="fas fa-arrow-right ml-3 text-lg"></i>
+          </button>
+        </div>
+        
+        <div class="mt-10 text-center">
+          <p class="text-lg text-gray-600">
+            Already have an account? 
+            <a href="{% url 'login' %}" class="text-blue-600 hover:text-blue-500 font-semibold underline">
+              Sign in
+            </a>
+          </p>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Organization change handler to load departments
+  const organizationField = document.getElementById('{{ form.organization.id_for_label }}');
+  const departmentField = document.getElementById('{{ form.department.id_for_label }}');
+  const departmentLoading = document.getElementById('department-loading');
+  const departmentHelp = document.getElementById('department-help');
+  
+  if (organizationField && departmentField) {
+    organizationField.addEventListener('change', function() {
+      const orgId = this.value;
+      if (!orgId) {
+        departmentField.innerHTML = '<option value="">Select organization first</option>';
+        departmentField.disabled = true;
+        return;
+      }
+      
+      // Show loading state
+      departmentField.innerHTML = '<option value="">Loading departments...</option>';
+      departmentField.disabled = true;
+      departmentLoading.classList.remove('hidden');
+      departmentHelp.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2 text-blue-500"></i> Loading departments...';
+      
+      // Fetch departments
+      fetch(`/get-departments/?organization_id=${orgId}`, {
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': '{{ csrf_token }}'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        // Clear loading state
+        departmentLoading.classList.add('hidden');
+        
+        if (data.departments && data.departments.length > 0) {
+          // Populate departments
+          departmentField.innerHTML = '<option value="">Select your department</option>';
+          data.departments.forEach(dept => {
+            const option = document.createElement('option');
+            option.value = dept.id;
+            option.textContent = dept.name;
+            departmentField.appendChild(option);
+          });
+          departmentField.disabled = false;
+          departmentHelp.innerHTML = '<i class="fas fa-check-circle mr-2 text-green-500"></i> Departments loaded successfully';
+        } else {
+          departmentField.innerHTML = '<option value="">No departments found</option>';
+          departmentHelp.innerHTML = '<i class="fas fa-info-circle mr-2 text-yellow-500"></i> No departments available for this organization';
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching departments:', error);
+        departmentLoading.classList.add('hidden');
+        departmentField.innerHTML = '<option value="">Error loading departments</option>';
+        departmentHelp.innerHTML = '<i class="fas fa-exclamation-triangle mr-2 text-red-500"></i> Error loading departments';
+      });
+    });
+  }
+  
+  // Password visibility toggle
+  const toggleButtons = document.querySelectorAll('.toggle-password');
+  toggleButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const targetId = this.getAttribute('data-target') || 
+                      this.closest('.relative').querySelector('input').id;
+      const passwordInput = document.getElementById(targetId);
+      const icon = this.querySelector('i');
+      
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        passwordInput.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    });
+  });
+  
+  // Real-time validation
+  const form = document.querySelector('form');
+  if (form) {
+    // Field validation on blur
+    const validateField = (field) => {
+      if (field.hasAttribute('required') && !field.value.trim()) {
+        field.classList.add('border-red-500', 'ring-2', 'ring-red-200');
+        const errorMsg = field.nextElementSibling;
+        if (!errorMsg || !errorMsg.classList.contains('text-red-600')) {
+          const errorElement = document.createElement('p');
+          errorElement.className = 'mt-2 text-base text-red-600 flex items-center';
+          errorElement.innerHTML = '<i class="fas fa-exclamation-circle mr-2"></i> This field is required';
+          field.parentNode.insertBefore(errorElement, field.nextSibling);
+        }
+      } else {
+        field.classList.remove('border-red-500', 'ring-2', 'ring-red-200');
+        const errorMsg = field.nextElementSibling;
+        if (errorMsg && errorMsg.classList.contains('text-red-600')) {
+          errorMsg.remove();
+        }
+      }
+    };
+    
+    // Validate all fields on submit
+    form.addEventListener('submit', function(e) {
+      let hasErrors = false;
+      const requiredFields = form.querySelectorAll('[required]');
+      
+      requiredFields.forEach(field => {
+        validateField(field);
+        if (!field.value.trim()) hasErrors = true;
+      });
+      
+      // Password match validation
+      const password1 = document.getElementById('{{ form.password1.id_for_label }}');
+      const password2 = document.getElementById('{{ form.password2.id_for_label }}');
+      
+      if (password1 && password2 && password1.value && password2.value && password1.value !== password2.value) {
+        password2.classList.add('border-red-500', 'ring-2', 'ring-red-200');
+        const errorMsg = password2.nextElementSibling;
+        if (!errorMsg || !errorMsg.classList.contains('text-red-600')) {
+          const errorElement = document.createElement('p');
+          errorElement.className = 'mt-2 text-base text-red-600 flex items-center';
+          errorElement.innerHTML = '<i class="fas fa-exclamation-circle mr-2"></i> Passwords do not match';
+          password2.parentNode.insertBefore(errorElement, password2.nextSibling);
+        }
+        hasErrors = true;
+      }
+      
+      if (hasErrors) {
+        e.preventDefault();
+        // Scroll to first error
+        const firstError = form.querySelector('.border-red-500');
+        if (firstError) {
+          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          firstError.focus();
+        }
+      }
+    });
+    
+    // Add blur event listeners
+    const inputs = form.querySelectorAll('input, select');
+    inputs.forEach(input => {
+      input.addEventListener('blur', () => validateField(input));
+    });
+  }
+});
+</script>
+
+<style>
+/* Enhanced form styling */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+select {
+  font-size: 1.1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  border-width: 2px;
+  transition: all 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+  outline: none;
+}
+
+/* Custom checkbox */
+input[type="checkbox"] {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.375rem;
+}
+
+/* Button hover effects */
+button[type="submit"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .grid-cols-1.md\:grid-cols-2 {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* Animation for form sections */
+.bg-gray-50 {
+  transition: all 0.3s ease;
+}
+
+.bg-gray-50:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Error states */
+.border-red-500 {
+  border-color: #ef4444;
+}
+
+.ring-red-200 {
+  --tw-ring-color: rgba(254, 202, 202, 0.5);
+}
+</style>
+{% endblock %}
