@@ -6,16 +6,17 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 
-# In your RUN apt-get install command, ensure these are included:
-RUN apt-get update && apt-get install -y \
+# Install system dependencies (optimized for Railway)
+RUN apt-get update && \
+    apt-get install -y \
     build-essential \
     cmake \
     libopenblas-dev \
     liblapack-dev \
     libjpeg-dev \
     libpng-dev \
-    libpq-dev \  # This is crucial for PostgreSQL
-    && rm -rf /var/lib/apt/lists/*
+    libpq-dev && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create and set working directory
 WORKDIR /app
