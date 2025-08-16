@@ -1,7 +1,7 @@
-# Use slim Python base image
+# Stage 1: Builder stage
 FROM python:3.11-slim as builder
 
-# Install system dependencies
+# Install build dependencies
 RUN apt-get update && \
     apt-get install -y \
     build-essential \
@@ -13,40 +13,39 @@ RUN apt-get update && \
     libpq-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# Create and set working directory
 WORKDIR /app
-
-# Copy requirements first to leverage Docker cache
 COPY requirements.txt .
-
-# Install Python dependencies
 RUN pip install --upgrade pip && \
     pip install --user -r requirements.txt
 
-# --- Runtime stage ---
+# Stage 2: Runtime stage
 FROM python:3.11-slim
 
-# Install runtime dependencies only
+# Install runtime dependencies
 RUN apt-get update && \
     apt-get install -y \
+    libopenblas0 \
+    liblapack3 \
     libjpeg-dev \
     libpng-dev \
-    libpq-dev && \
+    libpq5 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy installed Python packages from builder
+# Copy Python packages from builder
 COPY --from=builder /root/.local /root/.local
 COPY . .
 
-# Ensure scripts in .local are usable
-ENV PATH=/root/.local/bin:$PATH
+# Ensure Python can find the user-installed packages
+ENV PATH=/root/.local/bin:$PATH \
+    PYTHONPATH=/root/.local/lib/python3.11/site-packages
 
 # Collect static files
 RUN python manage.py collectstatic --noinput
 
-# Expose the port Railway will use
+# Set up the application
 ENV PORT=8000
 EXPOSE $PORT
-
-# Run Gunicorn
 CMD ["gunicorn", "attendancesystem.wsgi:application", "--bind", "0.0.0.0:$PORT", "--workers=2"]
