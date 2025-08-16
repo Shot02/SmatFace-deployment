@@ -1,6 +1,7 @@
 # railway.yaml
 build:
-  enabled: true
+  cache: true
+  compression: true
   dockerfile: Dockerfile
 
 deploy:
