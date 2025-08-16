@@ -4,28 +4,27 @@ FROM python:3.11-slim
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PORT=8000
 
-# Install system dependencies (needed for face-recognition, dlib, etc.)
+# Install system dependencies (optimized for Railway)
 RUN apt-get update && apt-get install -y \
-    build-essential cmake gfortran git wget curl \
-    libopenblas-dev liblapack-dev libatlas-base-dev \
-    libjpeg-dev libpng-dev libtiff-dev \
-    libavformat-dev libpq-dev \
+    build-essential \
+    cmake \
+    libopenblas-dev \
+    liblapack-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Create working directory
+# Create and set working directory
 WORKDIR /app
 
-# Copy requirements
+# Copy requirements first to leverage Docker cache
 COPY requirements.txt .
 
-# Upgrade pip
+# Install dependencies
 RUN pip install --upgrade pip
-
-# Install PyTorch manually (since facenet-pytorch requires 2.2.x)
-RUN pip install torch==2.2.0 torchvision==0.17.0
-
-# Install other requirements
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy project files
@@ -34,9 +33,8 @@ COPY . .
 # Collect static files
 RUN python manage.py collectstatic --noinput
 
-# Expose port
-EXPOSE 8000
+# Expose the port Railway will use
+EXPOSE $PORT
 
-# Start server with Gunicorn
-# ⚠️ Replace "myproject" with your actual Django project folder name!
-CMD ["gunicorn", "attendancesystem.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Run Gunicorn with the correct settings
+CMD gunicorn attendancesystem.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4

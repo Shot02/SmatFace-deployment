@@ -27,6 +27,18 @@ SECRET_KEY = "django-insecure-v3*=uz-@a*lt-#p@!xcd*6j21@*l-zf+jm71f!!@5pqn+euy97
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    X_FRAME_OPTIONS = 'DENY'
+
 ALLOWED_HOSTS = ["*"]
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'attendancesystem.settings')
@@ -82,21 +94,11 @@ WSGI_APPLICATION = "attendancesystem.wsgi.application"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-        'default': dj_database_url.config(
-        default='mysql://root:shot-010907@localhost:3306/attendance_db'
-    )
-    # "default": {
-    #     # "ENGINE" : 'django.db.backends.mysql',
-    #     # # "NAME" : 'attendance_db',
-    #     # # "USER" : 'root',
-    #     # # "PASSWORD" : 'shot-010907',
-    #     # "HOST" : 'localhost',
-    #     # # "PORT" : '3306',
-    #     # # "OPTIONS" : {
-    #     # #     'autocommit': True
-    #     # # }
-    # }
+    'default': dj_database_url.config(
+        default='sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3')),
+    'ENGINE': 'django.db.backends.postgresql'
 }
+
 
 
 # Password validation
@@ -133,14 +135,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "/static/"
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 
-MEDIA_URL = "/media/"
+MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
