@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: SmartFace-Attendance-system
+    env: docker
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        value: your_secret_key
+      - key: DATABASE_URL
+        sync: false
