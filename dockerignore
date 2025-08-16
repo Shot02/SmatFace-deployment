@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.Python
+env/
+venv/
+pip-selfcheck.json
+
+# Django
+*.sqlite3
+db.sqlite3
+*.log
+
+# Development
+.git/
+.gitignore
+.gitattributes
+*.md
+*.txt
+.editorconfig
+.vscode/
+.idea/
+*.iml
+
+# Build and deployment
+Dockerfile
+docker-compose.yml
+.dockerignore
+.env
+.env.local
+.env.*.local
+
+# Static and media (if collected during build)
+staticfiles/
+media/
+
+# Node/npm (if applicable)
+node_modules/
+npm-debug.log
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Documentation
+docs/
+*.rst
