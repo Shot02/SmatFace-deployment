@@ -25,7 +25,7 @@ PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 SECRET_KEY = "django-insecure-v3*=uz-@a*lt-#p@!xcd*6j21@*l-zf+jm71f!!@5pqn+euy97"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -39,7 +39,7 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = 'DENY'
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'attendancesystem.settings')
 
@@ -93,11 +93,22 @@ WSGI_APPLICATION = "attendancesystem.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+
+# This will parse the DATABASE_URL environment variable
 DATABASES = {
-    'default': dj_database_url.config(
-        default='sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3')),
-    'ENGINE': 'django.db.backends.postgresql'
+    'default': {
+        **dj_database_url.config(
+            default='sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        ),
+        'ENGINE': 'django.db.backends.postgresql',
+    }
 }
+
+# Additional database configuration from environment
+db_from_env = dj_database_url.config(conn_max_age=600)
+DATABASES['default'].update(db_from_env)
 
 
 
