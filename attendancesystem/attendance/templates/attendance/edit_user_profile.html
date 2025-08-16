@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Edit User Profile - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Breadcrumb Navigation -->
+    <div class="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+        <a href="{% url 'admin_dashboard' %}" class="hover:text-blue-600">Admin Dashboard</a>
+        <span>/</span>
+        <a href="{% url 'admin_dashboard' %}#user-management" class="hover:text-blue-600">User Management</a>
+        <span>/</span>
+        <a href="{% url 'view_user_profile' user_id=profile_user.id %}" class="hover:text-blue-600">View Profile</a>
+        <span>/</span>
+        <span class="text-gray-800 font-medium">Edit Profile</span>
+    </div>
+
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Edit User Profile</h1>
+            <p class="text-gray-600">Editing profile for {{ profile_user.get_full_name }}</p>
+        </div>
+    </div>
+
+    <!-- Profile Form -->
+    <div class="bg-white shadow rounded-lg p-6">
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Left Column -->
+                <div>
+                    <!-- Basic Information -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Basic Information</h3>
+                        
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                                <input type="text" name="first_name" value="{{ profile_user.first_name }}"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                                <input type="text" name="last_name" value="{{ profile_user.last_name }}"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <input type="email" name="email" value="{{ profile_user.email }}"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                <input type="text" name="phone_number" value="{{ profile_user.profile.phone_number|default:'' }}"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Organization Information -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Organization Information</h3>
+                        
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Position</label>
+                                <select name="position"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    {% for value, label in profile_user.POSITION_CHOICES %}
+                                        <option value="{{ value }}" {% if profile_user.position == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                                <select name="department"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">-- Select Department --</option>
+                                    {% for dept in departments %}
+                                        <option value="{{ dept.id }}" {% if profile_user.department == dept %}selected{% endif %}>{{ dept.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <div class="flex items-center space-x-4">
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" name="is_active" value="1" class="form-radio h-4 w-4 text-blue-600" {% if profile_user.is_active %}checked{% endif %}>
+                                        <span class="ml-2">Active</span>
+                                    </label>
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" name="is_active" value="0" class="form-radio h-4 w-4 text-blue-600" {% if not profile_user.is_active %}checked{% endif %}>
+                                        <span class="ml-2">Inactive</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column -->
+                <div>
+                    <!-- Profile Picture -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Profile Picture</h3>
+                        
+                        <div class="flex flex-col items-center">
+                            <div class="relative mb-4">
+                                {% if profile_user.profile.profile_picture %}
+                                    <img src="{{ profile_user.profile.profile_picture.url }}" alt="Profile Picture" 
+                                        class="h-32 w-32 rounded-full object-cover border-4 border-white shadow">
+                                {% else %}
+                                    <div class="h-32 w-32 rounded-full bg-gray-200 flex items-center justify-center text-4xl font-bold text-gray-600 border-4 border-white shadow">
+                                        {{ profile_user.first_name|first }}{{ profile_user.last_name|first }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="w-full">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Change Photo</label>
+                                <input type="file" name="profile_picture" accept="image/*"
+                                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Personal Details -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Personal Details</h3>
+                        
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                                <input type="date" name="date_of_birth" value="{{ profile_user.profile.date_of_birth|date:'Y-m-d' }}"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                <textarea name="address" rows="3"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">{{ profile_user.profile.address|default:'' }}</textarea>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Emergency Contact</label>
+                                <input type="text" name="emergency_contact" value="{{ profile_user.profile.emergency_contact|default:'' }}"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Emergency Phone</label>
+                                <input type="text" name="emergency_phone" value="{{ profile_user.profile.emergency_phone|default:'' }}"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
+                <a href="{% url 'view_user_profile' user_id=profile_user.id %}" 
+                    class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Cancel
+                </a>
+                <button type="submit" 
+                    class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

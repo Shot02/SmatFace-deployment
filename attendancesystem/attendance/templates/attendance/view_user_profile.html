@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}View User Profile - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Breadcrumb Navigation -->
+    <div class="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+        <a href="{% url 'admin_dashboard' %}" class="hover:text-blue-600">Admin Dashboard</a>
+        <span>/</span>
+        <a href="{% url 'admin_dashboard' %}#user-management" class="hover:text-blue-600">User Management</a>
+        <span>/</span>
+        <span class="text-gray-800 font-medium">View Profile</span>
+    </div>
+
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">User Profile</h1>
+            <p class="text-gray-600">Viewing profile for {{ profile_user.get_full_name }}</p>
+        </div>
+        <div class="flex space-x-3">
+            <a href="{% url 'edit_user_profile' user_id=profile_user.id %}" 
+                class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Edit Profile
+            </a>
+            <a href="{% url 'admin_dashboard' %}#user-management" 
+                class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Back to Users
+            </a>
+        </div>
+    </div>
+
+    <!-- Profile Content -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <!-- Profile Header -->
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
+                <div class="flex-shrink-0">
+                    {% if profile_user.profile.profile_picture %}
+                        <img src="{{ profile_user.profile.profile_picture.url }}" alt="Profile Picture" 
+                            class="h-20 w-20 rounded-full object-cover border-4 border-white shadow">
+                    {% else %}
+                        <div class="h-20 w-20 rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-600 border-4 border-white shadow">
+                            {{ profile_user.first_name|first }}{{ profile_user.last_name|first }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="flex-1 text-center md:text-left">
+                    <h2 class="text-xl font-bold text-gray-900">{{ profile_user.get_full_name }}</h2>
+                    <p class="text-sm text-gray-600">
+                        <span class="font-medium">{{ profile_user.get_position_display }}</span>
+                        {% if profile_user.department %}
+                            <span> • {{ profile_user.department.name }}</span>
+                        {% endif %}
+                    </p>
+                    <div class="mt-1">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if profile_user.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                            {% if profile_user.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-500">
+                    <p>Last Login: {% if profile_user.last_login %}{{ profile_user.last_login|date:"M d, Y H:i" }}{% else %}Never{% endif %}</p>
+                    <p>Member since: {{ profile_user.date_joined|date:"M d, Y" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Details -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 p-6">
+            <!-- Left Column -->
+            <div>
+                <!-- Basic Information -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Basic Information</h3>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-1 text-sm font-medium text-gray-500">First Name</div>
+                            <div class="col-span-2 text-sm">{{ profile_user.first_name }}</div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-1 text-sm font-medium text-gray-500">Last Name</div>
+                            <div class="col-span-2 text-sm">{{ profile_user.last_name }}</div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-1 text-sm font-medium text-gray-500">Email</div>
+                            <div class="col-span-2 text-sm">{{ profile_user.email }}</div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-1 text-sm font-medium text-gray-500">Phone</div>
+                            <div class="col-span-2 text-sm">{{ profile_user.profile.phone_number|default:"-" }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Organization Information -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Organization Information</h3>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-1 text-sm font-medium text-gray-500">Position</div>
+                            <div class="col-span-2 text-sm">{{ profile_user.get_position_display }}</div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-1 text-sm font-medium text-gray-500">Department</div>
+                            <div class="col-span-2 text-sm">{{ profile_user.department.name|default:"-" }}</div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-1 text-sm font-medium text-gray-500">Status</div>
+                            <div class="col-span-2 text-sm">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {% if profile_user.is_active %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    {% if profile_user.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div>
+                <!-- Personal Details -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Personal Details</h3>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-1 text-sm font-medium text-gray-500">Date of Birth</div>
+                            <div class="col-span-2 text-sm">{{ profile_user.profile.date_of_birth|date:"M d, Y"|default:"-" }}</div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-1 text-sm font-medium text-gray-500">Address</div>
+                            <div class="col-span-2 text-sm">{{ profile_user.profile.address|default:"-"|linebreaks }}</div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-1 text-sm font-medium text-gray-500">Emergency Contact</div>
+                            <div class="col-span-2 text-sm">{{ profile_user.profile.emergency_contact|default:"-" }}</div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-1 text-sm font-medium text-gray-500">Emergency Phone</div>
+                            <div class="col-span-2 text-sm">{{ profile_user.profile.emergency_phone|default:"-" }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Face Profile Status -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Face Recognition</h3>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-1 text-sm font-medium text-gray-500">Status</div>
+                            <div class="col-span-2 text-sm">
+                                {% if profile_user.face_profile %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        Registered
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                        Not Registered
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if profile_user.face_profile %}
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-1 text-sm font-medium text-gray-500">Last Used</div>
+                            <div class="col-span-2 text-sm">
+                                {% if profile_user.face_profile.last_used %}
+                                    {{ profile_user.face_profile.last_used|date:"M d, Y H:i" }}
+                                {% else %}
+                                    Never
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="px-6 py-4 border-t border-gray-200">
+            <h3 class="text-lg font-semibold mb-4">Recent Attendance</h3>
+            {% with recent_attendance=profile_user.attendances.all|slice:":5" %}
+                {% if recent_attendance %}
+                    <div class="space-y-2">
+                        {% for record in recent_attendance %}
+                            <div class="flex items-center p-3 hover:bg-gray-50 rounded-md">
+                                <div class="flex-shrink-0 mr-4 text-lg {% if record.status == 'PRESENT' %}text-green-500{% else %}text-yellow-500{% endif %}">
+                                    <i class="fas {% if record.status == 'PRESENT' %}fa-check-circle{% else %}fa-clock{% endif %}"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900">
+                                        {{ record.get_status_display }} on {{ record.date|date:"M d, Y" }}
+                                    </p>
+                                    <p class="text-sm text-gray-500">
+                                        {{ record.time_in|time }}
+                                        {% if record.time_out %} - {{ record.time_out|time }}{% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-sm text-gray-500">No attendance records found.</p>
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</div>
+{% endblock %}

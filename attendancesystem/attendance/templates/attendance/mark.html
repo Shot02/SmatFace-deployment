@@ -1,0 +1,504 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% if is_marking_in %}Mark In{% else %}Mark Out{% endif %} | SmartFace{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-8 px-4">
+    <!-- Header Section -->
+    <div class="text-center mb-8">
+        <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            {% if is_marking_in %}
+            <i class="fas fa-sign-in-alt text-blue-600 text-3xl"></i>
+            {% else %}
+            <i class="fas fa-sign-out-alt text-blue-600 text-3xl"></i>
+            {% endif %}
+        </div>
+        <h1 class="text-2xl font-bold text-gray-800 mb-2">
+            {% if is_marking_in %}Mark In Attendance{% else %}Mark Out Attendance{% endif %}
+        </h1>
+        <p class="text-gray-600">
+            {% if is_marking_in %}
+            Start your day with a smile!
+            {% else %}
+            Great work today!
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- Camera Feed Section -->
+    <div class="relative bg-gray-100 rounded-xl overflow-hidden mb-6 shadow-sm border border-gray-200">
+        <video id="attendance-video" class="w-full h-auto" autoplay playsinline></video>
+        
+        <!-- Face Outline -->
+        <div id="face-outline" class="absolute inset-0 flex items-center justify-center pointer-events-none hidden">
+            <div class="border-4 border-blue-500 rounded-full w-64 h-64 animate-pulse"></div>
+        </div>
+        
+        <!-- Status Indicator -->
+        <div id="status-indicator" class="absolute top-4 left-4 bg-white bg-opacity-90 rounded-full px-3 py-1 text-sm font-medium hidden">
+            <i class="fas fa-circle mr-1 text-gray-400"></i>
+            <span id="status-text">Waiting...</span>
+        </div>
+    </div>
+
+    <!-- AI Message Box -->
+    <div id="ai-message-box" class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6 transition-all duration-300">
+        <div class="flex items-start">
+            <div class="flex-shrink-0 text-blue-500 mt-1">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="ml-3">
+                <p id="ai-message-text" class="text-blue-800">
+                    {% if is_marking_in %}
+                    Ready to verify your identity for today's work!
+                    {% else %}
+                    Ready to verify your identity before you leave.
+                    {% endif %}
+                </p>
+                <div id="ai-message-footer" class="mt-2 text-xs text-blue-600 opacity-0 transition-opacity duration-300">
+                    <button id="refresh-message" class="hover:text-blue-800">
+                        <i class="fas fa-sync-alt mr-1"></i> New message
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Message Box (Hidden by default) -->
+    <div id="error-box" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 hidden">
+        <div class="flex items-start">
+            <div class="flex-shrink-0 text-red-500 mt-1">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="ml-3">
+                <p id="error-text" class="text-red-800">Error message will appear here</p>
+                <div class="mt-2">
+                    <button id="retry-btn" class="text-xs text-red-600 hover:text-red-800 font-medium">
+                        <i class="fas fa-redo mr-1"></i> Try Again
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Verification Button -->
+    <button id="verify-btn" class="btn btn-primary w-full py-3 text-lg bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors">
+        {% if is_marking_in %}
+        <i class="fas fa-fingerprint mr-2"></i> Verify and Mark In
+        {% else %}
+        <i class="fas fa-fingerprint mr-2"></i> Verify and Mark Out
+        {% endif %}
+    </button>
+
+    <!-- Result Modal (Hidden by default) -->
+    <div id="result-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl p-6 max-w-sm w-full mx-4 text-center animate-pop-in">
+            <div id="result-icon" class="text-5xl mb-4">
+                <i class="fas fa-check-circle text-green-500"></i>
+            </div>
+            <h3 id="result-title" class="text-xl font-bold mb-2">Success!</h3>
+            <p id="result-message" class="text-gray-600 mb-4">
+                {% if is_marking_in %}
+                You've been successfully marked in. Have a productive day!
+                {% else %}
+                You've been successfully marked out. See you tomorrow!
+                {% endif %}
+            </p>
+            
+            <!-- Attendance Details -->
+            <div id="attendance-details" class="bg-gray-50 p-4 rounded-lg mb-4 text-left hidden">
+                <h4 class="font-medium text-gray-700 mb-2">Attendance Details:</h4>
+                <div class="space-y-1 text-sm">
+                    <p><span class="font-medium">Date:</span> <span id="attendance-date"></span></p>
+                    <p><span class="font-medium">Time In:</span> <span id="attendance-time-in"></span></p>
+                    <p id="attendance-time-out-row" class="hidden"><span class="font-medium">Time Out:</span> <span id="attendance-time-out"></span></p>
+                    <p id="attendance-duration-row" class="hidden"><span class="font-medium">Duration:</span> <span id="attendance-duration"></span></p>
+                    <p><span class="font-medium">Status:</span> <span id="attendance-status"></span></p>
+                </div>
+            </div>
+            
+            <p id="ai-result-message" class="text-blue-600 font-medium mb-4 italic"></p>
+            <button id="close-modal" class="btn btn-primary w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors">
+                Continue
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    @keyframes pop-in {
+        0% { transform: scale(0.8); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pop-in {
+        animation: pop-in 0.3s ease-out forwards;
+    }
+    .animate-pulse {
+        animation: pulse 2s infinite;
+    }
+</style>
+
+<script>
+// CSRF Token helper
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById('attendance-video');
+    const verifyBtn = document.getElementById('verify-btn');
+    const faceOutline = document.getElementById('face-outline');
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = document.getElementById('status-text');
+    const aiMessageBox = document.getElementById('ai-message-box');
+    const aiMessageText = document.getElementById('ai-message-text');
+    const aiMessageFooter = document.getElementById('ai-message-footer');
+    const refreshMessageBtn = document.getElementById('refresh-message');
+    const resultModal = document.getElementById('result-modal');
+    const resultIcon = document.getElementById('result-icon');
+    const resultTitle = document.getElementById('result-title');
+    const resultMessage = document.getElementById('result-message');
+    const aiResultMessage = document.getElementById('ai-result-message');
+    const closeModal = document.getElementById('close-modal');
+    const errorBox = document.getElementById('error-box');
+    const errorText = document.getElementById('error-text');
+    const retryBtn = document.getElementById('retry-btn');
+    
+    let stream = null;
+    let isProcessing = false;
+    let faceDetectionInterval = null;
+    
+    // AI Messages Database
+    const aiMessages = {
+        mark_in: [
+            "A smile is the best way to start your day! \ud83d\ude0a",
+            "Did you know? Taking breaks boosts productivity by 20%!",
+            "Looking sharp today! The camera loves you!",
+            "Early bird catches the worm! Or in this case, marks attendance!",
+            "Your face is your password here. And what a secure password it is!",
+            "Stand tall like you own the place... because you do!",
+            "Remember: Coffee first, then conquer the world!",
+            "That's a face ready to tackle the day!",
+            "Pro tip: Stretch every hour for better focus!",
+            "You're not just marking in, you're making history!"
+        ],
+        mark_out: [
+            "Another day, another dollar! \ud83d\udcb0",
+            "Time to relax and recharge those batteries!",
+            "Did you do your best today? That's all that matters!",
+            "Leaving on time is a form of self-care!",
+            "Tomorrow is another chance to be awesome!",
+            "All work and no play makes Jack a dull boy!",
+            "Don't forget to hydrate before you leave!",
+            "Great job today! Now go enjoy your evening!",
+            "The best part of the workday? The end! Just kidding... maybe.",
+            "You've earned this rest. See you tomorrow!"
+        ]
+    };
+    
+    // Start camera
+    async function startCamera() {
+        try {
+            // Request camera with specific constraints for better quality
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: 'user',
+                    frameRate: { ideal: 30 }
+                } 
+            });
+            video.srcObject = stream;
+            
+            // Wait for video to be ready
+            video.onloadedmetadata = () => {
+                video.play();
+                faceOutline.classList.remove('hidden');
+                statusIndicator.classList.remove('hidden');
+                updateStatus('Ready for verification');
+                
+                // Show AI message footer after delay
+                setTimeout(() => {
+                    aiMessageFooter.classList.remove('opacity-0');
+                    aiMessageFooter.classList.add('opacity-100');
+                }, 2000);
+                
+                // Display initial AI message
+                displayAIMessage();
+                
+                // Start face detection
+                startFaceDetection();
+            };
+            
+        } catch (err) {
+            console.error("Camera error:", err);
+            updateStatus('Camera access denied', 'error');
+            verifyBtn.disabled = true;
+            verifyBtn.innerHTML = '<i class="fas fa-camera-slash mr-2"></i> Camera Error';
+            showError('Could not access camera. Please enable camera permissions and refresh the page.');
+        }
+    }
+    
+    // Periodically check for face in frame
+    function startFaceDetection() {
+        // Clear any existing interval
+        if (faceDetectionInterval) {
+            clearInterval(faceDetectionInterval);
+        }
+        
+        faceDetectionInterval = setInterval(async () => {
+            if (isProcessing) return;
+            
+            try {
+                // Create canvas to capture frame
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Convert to blob
+                const blob = await new Promise(resolve => 
+                    canvas.toBlob(resolve, 'image/jpeg', 0.7)
+                );
+                
+                // Create FormData
+                const formData = new FormData();
+                formData.append('image', blob, 'face_check.jpg');
+                
+                // Send to server for face detection
+                const response = await fetch('{% url "face_detection_api" %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.is_valid) {
+                    updateStatus('Face detected! Ready to verify', 'success');
+                    verifyBtn.disabled = false;
+                    hideError();
+                    
+                    // Update face outline position if face location is provided
+                    if (result.face_location) {
+                        const [top, right, bottom, left] = result.face_location;
+                        const faceWidth = right - left;
+                        const faceHeight = bottom - top;
+                        const outlineSize = Math.max(faceWidth, faceHeight) * 1.2; // 20% larger than face
+                        
+                        const outline = faceOutline.querySelector('div');
+                        outline.style.width = `${outlineSize}px`;
+                        outline.style.height = `${outlineSize}px`;
+                    }
+                    
+                } else {
+                    updateStatus(result.error || 'Position your face properly', 'warning');
+                }
+            } catch (error) {
+                console.error('Face detection error:', error);
+            }
+        }, 1000); // Check every second
+    }
+    
+    // Update verification status
+    function updateStatus(text, type = 'info') {
+        statusText.textContent = text;
+        const icon = statusIndicator.querySelector('i');
+        
+        statusIndicator.className = 'absolute top-4 left-4 bg-white bg-opacity-90 rounded-full px-3 py-1 text-sm font-medium';
+        
+        if (type === 'error') {
+            icon.className = 'fas fa-circle mr-1 text-red-500';
+            statusIndicator.classList.add('border', 'border-red-300');
+        } else if (type === 'success') {
+            icon.className = 'fas fa-circle mr-1 text-green-500';
+            statusIndicator.classList.add('border', 'border-green-300');
+        } else if (type === 'warning') {
+            icon.className = 'fas fa-circle mr-1 text-yellow-500';
+            statusIndicator.classList.add('border', 'border-yellow-300');
+        } else {
+            icon.className = 'fas fa-circle mr-1 text-blue-500';
+            statusIndicator.classList.add('border', 'border-blue-300');
+        }
+    }
+    
+    // Display random AI message
+    function displayAIMessage() {
+        const messages = is_marking_in ? aiMessages.mark_in : aiMessages.mark_out;
+        aiMessageText.textContent = messages[Math.floor(Math.random() * messages.length)];
+    }
+    
+    // Show error message
+    function showError(message) {
+        errorText.textContent = message;
+        errorBox.classList.remove('hidden');
+        setTimeout(() => {
+            errorBox.classList.add('bg-red-100');
+            setTimeout(() => {
+                errorBox.classList.remove('bg-red-100');
+            }, 300);
+        }, 100);
+    }
+    
+    // Hide error message
+    function hideError() {
+        errorBox.classList.add('hidden');
+    }
+    
+    // Handle verification
+    verifyBtn.addEventListener('click', async function() {
+        if (isProcessing) return;
+        isProcessing = true;
+        
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Verifying...';
+        updateStatus('Verifying your identity', 'info');
+        hideError();
+        
+        try {
+            // Capture frame
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            const blob = await new Promise(resolve => 
+                canvas.toBlob(resolve, 'image/jpeg', 0.9)
+            );
+            
+            const formData = new FormData();
+            formData.append('face_image', blob, 'face.jpg');
+            formData.append('action', '{{ is_marking_in|yesno:"mark_in,mark_out" }}');
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            
+            const response = await fetch('{% url "verify_face_attendance" %}', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Show success
+                updateStatus('Verification successful', 'success');
+                this.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Success!';
+                
+                // Display AI message
+                aiResultMessage.textContent = result.message;
+                
+                // Display attendance details if available
+                if (result.attendance_data) {
+                    const attendanceDetails = document.getElementById('attendance-details');
+                    const attendanceDate = document.getElementById('attendance-date');
+                    const attendanceTimeIn = document.getElementById('attendance-time-in');
+                    const attendanceTimeOut = document.getElementById('attendance-time-out');
+                    const attendanceTimeOutRow = document.getElementById('attendance-time-out-row');
+                    const attendanceDuration = document.getElementById('attendance-duration');
+                    const attendanceDurationRow = document.getElementById('attendance-duration-row');
+                    const attendanceStatus = document.getElementById('attendance-status');
+                    
+                    // Set attendance details
+                    attendanceDate.textContent = result.attendance_data.date;
+                    attendanceTimeIn.textContent = result.attendance_data.time_in;
+                    
+                    // Set status with proper formatting
+                    let statusText = result.attendance_data.status;
+                    let statusClass = '';
+                    
+                    if (statusText === 'PRESENT') {
+                        statusText = 'Present';
+                        statusClass = 'text-green-600';
+                    } else if (statusText === 'LATE') {
+                        statusText = 'Late';
+                        statusClass = 'text-yellow-600';
+                    }
+                    
+                    attendanceStatus.textContent = statusText;
+                    attendanceStatus.className = statusClass;
+                    
+                    // Show time out and duration for mark out
+                    if (result.attendance_data.time_out) {
+                        attendanceTimeOut.textContent = result.attendance_data.time_out;
+                        attendanceTimeOutRow.classList.remove('hidden');
+                        
+                        if (result.attendance_data.duration) {
+                            attendanceDuration.textContent = result.attendance_data.duration;
+                            attendanceDurationRow.classList.remove('hidden');
+                        }
+                    }
+                    
+                    // Show attendance details section
+                    attendanceDetails.classList.remove('hidden');
+                }
+                
+                // Display result modal
+                resultModal.classList.remove('hidden');
+                
+            } else {
+                throw new Error(result.error || 'Verification failed');
+            }
+            
+        } catch (error) {
+            console.error('Verification error:', error);
+            updateStatus('Verification failed', 'error');
+            this.innerHTML = '{% if is_marking_in %}<i class="fas fa-fingerprint mr-2"></i> Try Again{% else %}<i class="fas fa-fingerprint mr-2"></i> Try Again{% endif %}';
+            this.disabled = false;
+            showError(error.message || 'Failed to verify your face. Please try again.');
+        } finally {
+            isProcessing = false;
+        }
+    });
+    
+    // Refresh AI message
+    refreshMessageBtn.addEventListener('click', displayAIMessage);
+    
+    // Retry button
+    retryBtn.addEventListener('click', function() {
+        hideError();
+        verifyBtn.disabled = false;
+        verifyBtn.innerHTML = '{% if is_marking_in %}<i class="fas fa-fingerprint mr-2"></i> Verify and Mark In{% else %}<i class="fas fa-fingerprint mr-2"></i> Verify and Mark Out{% endif %}';
+    });
+    
+    // Close modal and redirect
+    closeModal.addEventListener('click', function() {
+        resultModal.classList.add('hidden');
+        window.location.href = "{% url 'dashboard' %}";
+    });
+    
+    // Start the camera when page loads
+    startCamera();
+    
+    // Cleanup
+    window.addEventListener('beforeunload', () => {
+        if (faceDetectionInterval) {
+            clearInterval(faceDetectionInterval);
+        }
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    });
+});
+
+// Set is_marking_in from Django template
+const is_marking_in = {% if is_marking_in %}true{% else %}false{% endif %};
+</script>
+{% endblock %}

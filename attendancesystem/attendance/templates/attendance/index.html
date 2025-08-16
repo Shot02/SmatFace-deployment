@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}SmartFace - AI Face Attendance System{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+  <div class="container mx-auto px-4 py-12">
+    <!-- Hero Section -->
+    <div class="text-center max-w-4xl mx-auto mb-12">
+      <div class="w-24 h-24 bg-white rounded-2xl shadow-lg flex items-center justify-center mx-auto mb-6">
+        <i class="fas fa-user-clock text-blue-500 text-4xl"></i>
+      </div>
+      <h1 class="text-5xl font-bold text-gray-800 mb-4">SmartFace Attendance</h1>
+      <p class="text-xl text-gray-600 mb-8 leading-relaxed">
+        Revolutionizing workplace attendance with facial recognition technology.
+        Fast, secure, and contactless check-in/check-out for your organization.
+      </p>
+      
+      <!-- Benefits Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">
+        <!-- Benefit 1 -->
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+          <div class="text-blue-500 text-3xl mb-4">
+            <i class="fas fa-bolt"></i>
+          </div>
+          <h3 class="font-bold text-lg mb-2">Instant Verification</h3>
+          <p class="text-gray-600">Check-in/out in seconds with just your face</p>
+        </div>
+
+        <!-- Benefit 2 -->
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+          <div class="text-blue-500 text-3xl mb-4">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <h3 class="font-bold text-lg mb-2">Secure Tracking</h3>
+          <p class="text-gray-600">Eliminate buddy punching and time theft</p>
+        </div>
+
+        <!-- Benefit 3 -->
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+          <div class="text-blue-500 text-3xl mb-4">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <h3 class="font-bold text-lg mb-2">Real-time Analytics</h3>
+          <p class="text-gray-600">Monitor attendance patterns and trends</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+      {% if user.is_authenticated %}
+        <a href="{% url 'dashboard' %}" class="btn btn-primary bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-md transition-colors text-center">
+          <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+        </a>
+        
+        {% if has_attendance_today and not attendance_today.time_out %}
+          <a href="{% url 'mark_attendance' %}?action=mark_out" class="btn btn-secondary bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-md transition-colors text-center">
+            <i class="fas fa-sign-out-alt mr-2"></i> Mark Out
+          </a>
+        {% else %}
+          <a href="{% url 'mark_attendance' %}?action=mark_in" class="btn btn-primary bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-md transition-colors text-center">
+            <i class="fas fa-sign-in-alt mr-2"></i> Mark In
+          </a>
+        {% endif %}
+      {% else %}
+        <a href="{% url 'signup' %}" class="btn btn-primary bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-md transition-colors text-center">
+          <i class="fas fa-user-plus mr-2"></i> Join Your Organization
+        </a>
+        <a href="{% url 'register_company' %}" class="btn btn-secondary bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-md transition-colors text-center">
+          <i class="fas fa-building mr-2"></i> Register Your Organization
+        </a>
+        <div class="md:col-span-2 flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="{% url 'login' %}" class="btn btn-outline-primary border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium py-3 px-6 rounded-md transition-colors text-center flex-1">
+            <i class="fas fa-sign-in-alt mr-2"></i> Login with Email
+          </a>
+          <a href="{% url 'face_login' %}" class="btn btn-outline-primary border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium py-3 px-6 rounded-md transition-colors text-center flex-1">
+            <i class="fas fa-camera mr-2"></i> Login with Face
+          </a>
+        </div>
+      {% endif %}
+    </div>
+    
+    <!-- Features Section -->
+    <div class="max-w-6xl mx-auto mt-24">
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Smart Features for Modern Workplaces</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+        <!-- Feature 1 -->
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <div class="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white">
+              <i class="fas fa-brain"></i>
+            </div>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-medium text-gray-900">AI-Powered Recognition</h3>
+            <p class="mt-2 text-base text-gray-600">
+              Advanced facial recognition technology ensures accurate identification even in varying lighting conditions.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Feature 2 -->
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <div class="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white">
+              <i class="fas fa-chart-pie"></i>
+            </div>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-medium text-gray-900">Comprehensive Reports</h3>
+            <p class="mt-2 text-base text-gray-600">
+              Generate detailed attendance reports with insights on punctuality, attendance patterns, and more.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Feature 3 -->
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <div class="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white">
+              <i class="fas fa-chart-pie"></i>
+            </div>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-medium text-gray-900">Comprehensive Reports</h3>
+            <p class="mt-2 text-base text-gray-600">
+              Generate detailed attendance reports with insights on punctuality, attendance patterns, and more.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Feature 4 -->
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <div class="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white">
+              <i class="fas fa-smile"></i>
+            </div>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-medium text-gray-900">Motivational AI</h3>
+            <p class="mt-2 text-base text-gray-600">
+              Receive personalized motivational messages and productivity tips when marking attendance.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
