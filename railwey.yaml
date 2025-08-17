@@ -1,17 +1,18 @@
-# railway.yaml
 build:
-  cache: true
   compression: 9
   resources:
-  memory: 4096
+    memory: 4096
+    cpu: 2
+  cache: true
   dockerfile: Dockerfile
 
 deploy:
   environment: production
-  start_command: gunicorn attendancesystem.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4
+  start_command: gunicorn attendancesystem.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 2
 
 variables:
   DJANGO_SETTINGS_MODULE: attendancesystem.settings
   PYTHONUNBUFFERED: 1
   PYTHONDONTWRITEBYTECODE: 1
   DISABLE_COLLECTSTATIC: 0
+  GUNICORN_CMD_ARGS: "--worker-tmp-dir /dev/shm --preload"
