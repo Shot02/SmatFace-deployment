@@ -1,4 +1,7 @@
-# Stage 1: Face recognition builder
+# Stage 1: PyTorch base image (official optimized image)
+FROM pytorch/pytorch:2.2.0-cpu11.8 as torch_base
+
+# Stage 2: Face recognition builder
 FROM python:3.11-slim as face_builder
 
 # Install minimal build dependencies
@@ -9,15 +12,15 @@ RUN apt-get update && \
     libopenblas-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install pre-built dlib wheel to avoid compilation
+# Install pre-built dlib wheel
 RUN pip install --no-cache-dir --user \
     https://files.pythonhosted.org/packages/0e/ce/f8a3cff33ac03a8219768f0694c5d703c8e037e6aba2e865f9bae22ed63c/dlib-19.24.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl \
     face-recognition==1.3.0
 
-# Stage 2: Main application builder
+# Stage 3: Main application builder
 FROM python:3.11-slim as app_builder
 
-# Install remaining build dependencies
+# Install system dependencies
 RUN apt-get update && \
     apt-get install -y \
     libpq-dev \
@@ -26,16 +29,14 @@ RUN apt-get update && \
 WORKDIR /app
 COPY requirements.txt .
 
-# Install CPU-only PyTorch first
-RUN pip install --no-cache-dir \
-    torch==2.2.0+cpu \
-    torchvision==0.17.0+cpu \
-    -f https://download.pytorch.org/whl/torch_stable.html
+# Install from torch_base to avoid rebuilding
+COPY --from=torch_base /usr/local/lib/python3.11/site-packages/torch /usr/local/lib/python3.11/site-packages/torch
+COPY --from=torch_base /usr/local/lib/python3.11/site-packages/torchvision /usr/local/lib/python3.11/site-packages/torchvision
 
-# Install other requirements (excluding face-recognition)
-RUN pip install --no-cache-dir -r <(grep -v "face-recognition" requirements.txt)
+# Install other requirements (excluding torch/face-recognition)
+RUN pip install --no-cache-dir -r <(grep -v "torch\|face-recognition" requirements.txt)
 
-# Stage 3: Final image
+# Stage 4: Final image
 FROM python:3.11-slim
 
 # Minimal runtime dependencies
@@ -46,7 +47,9 @@ RUN apt-get update && \
     libjpeg62-turbo \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy only necessary artifacts
+# Copy artifacts
+COPY --from=torch_base /usr/local/lib/python3.11/site-packages/torch /usr/local/lib/python3.11/site-packages/torch
+COPY --from=torch_base /usr/local/lib/python3.11/site-packages/torchvision /usr/local/lib/python3.11/site-packages/torchvision
 COPY --from=face_builder /root/.local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=app_builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=app_builder /app /app
