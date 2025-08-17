@@ -1,7 +1,9 @@
 # railway.yaml
 build:
   cache: true
-  compression: true
+  compression: 9
+  resources:
+  memory: 4096
   dockerfile: Dockerfile
 
 deploy:
